@@ -1,0 +1,7 @@
+def add(a: i32, b: i32):
+    return a + b
+
+def someRandomFunction(a: i32, b: i32):
+    return add(a * 2, b * 3) + 4
+
+exit someRandomFunction(3, 7)
