@@ -78,10 +78,13 @@ def tokenize(code: str) -> list[dict]:
                 tokens.append({"type": "EQUAL", "value": "="})
                 continue
             case ";":
-                tokens.append({"type": "SEMICOLON", "value": "="})
+                tokens.append({"type": "SEMICOLON", "value": ";"})
                 continue
             case ",":
                 tokens.append({"type": "COMMA", "value": ","})
+                continue
+            case ".":
+                tokens.append({"type": "DOT", "value": "."})
                 continue
 
     if len(latest) > 0:
@@ -89,8 +92,6 @@ def tokenize(code: str) -> list[dict]:
             tokens.append({"type": "NUMBER", "value": latest})
         elif inside_name:
             tokens.append({"type": "NAME", "value": latest})
-
-    # print(*tokens, sep="\n")
 
     return tokens
 
@@ -384,6 +385,7 @@ def parse_function(tokens: list[dict], parent_node: Node, i: int) -> int:
 
     if tokens[i]["type"] != "INDENT":
         raise Exception("Expected INDENT")
+
     i += 1
 
     body_node: Node = Node(None, {"type": "FunctionBody", "value": None})
@@ -580,15 +582,15 @@ def compile_return(return_node: Node, function_name: str) -> str:
 def compile_exit(exit_node: Node, function_name: str | None = None) -> str:
     output: str = f"\n\t; [[ {exit_node.source_code} ]]\n"
     if len(exit_node.children) < 1:
-        return f"{output}\tpop ebp\n\tpush 0\n\tcall ExitProcess\n"
+        return f"{output}\tpop ebp\n\tpush 0\n\tcall ExitProcess\n\tret\n"
 
     if exit_node.children[0].data["type"] == "BinaryExpression" or exit_node.children[0].data["type"] == "FunctionCall":
         output += compile_binary_expression(exit_node.children[0], function_name)
-        output += "\tpop ebp\n\tpush eax\n\tcall ExitProcess\n"
+        output += "\tpop ebp\n\tpush eax\n\tcall ExitProcess\n\tret\n"
         return output
     else:
         var_value: str = compile_binary_expression(exit_node.children[0], function_name)
-        return f"{output}\tpop ebp\n\tpush {var_value}\n\tcall ExitProcess\n"
+        return f"{output}\tpop ebp\n\tpush {var_value}\n\tcall ExitProcess\n\tret\n"
 
 
 def get_type_size(type_name: str) -> int:
@@ -714,17 +716,23 @@ def compile_program(abstract_tree: Node) -> str:
     program, _, has_exited = compile_body(abstract_tree, None, "main PROC\n\tpush ebp\n")
 
     if not has_exited:
-        program += "\tpop ebp\n\tpush 0\n\tcall ExitProcess\n"
+        program += "\tpop ebp\n\tpush 0\n\tcall ExitProcess\n\tret\n"
 
     output += program + "main ENDP\n\nEND main\n"
 
     return output
 
 
-def main() -> None:
-    input_file_path: str = "C:\\dev\\Code\\Python\\$PycharmProjects\\Compiler\\test\\main.code"
-    output_file_path: str = "C:\\dev\\Code\\MASM\\MASM\\Main.asm"
+def run(input_file_path: str, output_file_path: str) -> None:
+    with open(input_file_path, mode="r") as input_file:
+        with open(output_file_path, mode="w") as output_file:
+            parsed_result = parse(tokenize(input_file.read()))
+            output_file.write(compile_program(parsed_result))
 
+    print("Code Created!")
+
+
+def run_verbose(input_file_path: str, output_file_path: str) -> None:
     with open(input_file_path, mode="r") as input_file:
         with open(output_file_path, mode="w") as output_file:
             parsed_result = parse(tokenize(input_file.read()))
@@ -736,5 +744,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-    # input("Exiting...")
+    InputFilePath: str = "C:\\dev\\Code\\Python\\$PycharmProjects\\Compiler\\test\\main.code"
+    OutputFilePath: str = "C:\\dev\\Code\\MASM\\MASM\\Main.asm"
+    run_verbose(InputFilePath, OutputFilePath)

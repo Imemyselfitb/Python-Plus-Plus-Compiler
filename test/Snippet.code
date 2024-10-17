@@ -4,4 +4,12 @@ z = 10
 
 x = x + 1
 
-return x * y - z
+def add(a: i32, b: i32):
+    return a + b
+
+def someRandomFunction(a: i32, b: i32):
+    return add(a * 2, b * 3) + 4
+
+z = someRandomFunction(3, 7)
+
+exit x * y + z
